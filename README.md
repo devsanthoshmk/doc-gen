@@ -1,22 +1,14 @@
-# Turborepo starter
+just place your code in the respective folders and create a pull request to main branch and tell me
 
-This Turborepo starter is maintained by the Turborepo core team.
-
-## Using this example
-
-Run the following command:
-
-```sh
-npx create-turbo@latest
-```
+# turbo repo docs
 
 ## What's inside?
 
-This Turborepo includes the following packages/apps:
+This Turborepo includes the following packages andapps:
 
 ### Apps and Packages
 
-- `packages/core`: React component library (`@repo/ui`)
+- `packages/core`: empty package(`@repo/core`)
 - `@repo/eslint-config`: shared ESLint configs (React + Prettier)
 - `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
 
