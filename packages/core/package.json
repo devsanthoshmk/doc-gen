@@ -1,11 +1,12 @@
 {
-  "name": "@repo/ui",
+  "name": "@repo/core",
   "version": "0.0.0",
   "private": true,
   "exports": {
     "./*": "./src/*.tsx"
   },
   "scripts": {
+    "dev": "npx tsx index.ts",
     "lint": "eslint . --max-warnings 0",
     "generate:component": "turbo gen react-component",
     "check-types": "tsc --noEmit"
@@ -15,9 +16,14 @@
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^22.15.3",
     "eslint": "^9.39.1",
+    "tsx": "^4.22.3",
     "typescript": "5.9.2"
   },
   "dependencies": {
-
+    "@types/node": "^25.9.1",
+    "docxtemplater": "^3.68.7",
+    "pizzip": "^3.2.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
   }
 }
