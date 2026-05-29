@@ -18,6 +18,7 @@ interface GenerateContextType {
   setGeneratedEmail: (email: GeneratedEmail) => void;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const GenerateContext = createContext<GenerateContextType | undefined>(
   undefined,
 );

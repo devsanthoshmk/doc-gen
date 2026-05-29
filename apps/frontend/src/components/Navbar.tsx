@@ -2,11 +2,11 @@ import { Link } from "react-router-dom";
 
 const Navbar = () => {
   const navbarStyle: React.CSSProperties = {
-    backgroundColor: "#ffffff",
-    borderBottom: "1px solid #e5e7eb",
-    boxShadow: "0 1px 8px rgba(0,0,0,0.06)",
+    background: "var(--glass-bg)",
+    backdropFilter: "blur(12px)",
+    borderBottom: "1px solid var(--border-subtle)",
     padding: "0 40px",
-    height: "60px",
+    height: "80px",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
@@ -16,32 +16,37 @@ const Navbar = () => {
   };
 
   const logoStyle: React.CSSProperties = {
-    fontSize: "20px",
-    fontWeight: 700,
-    color: "#5d3fd3",
+    fontSize: "24px",
+    fontWeight: 800,
+    color: "var(--text-primary)",
     textDecoration: "none",
-    letterSpacing: "0.5px",
-    fontFamily: "Playfair Display, serif",
+    letterSpacing: "-0.04em",
+    fontFamily: "Syne, sans-serif",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
   };
 
   const navLinksContainerStyle: React.CSSProperties = {
     display: "flex",
-    gap: "32px",
+    gap: "40px",
     alignItems: "center",
   };
 
   const linkStyle: React.CSSProperties = {
-    color: "#374151",
+    color: "var(--text-secondary)",
     textDecoration: "none",
-    fontSize: "14px",
-    fontWeight: 500,
-    transition: "color 0.3s ease",
+    fontSize: "13px",
+    fontWeight: 600,
+    letterSpacing: "0.05em",
+    textTransform: "uppercase",
+    transition: "all 0.3s ease",
     cursor: "pointer",
-    fontFamily: "DM Sans, sans-serif",
+    fontFamily: "Outfit, sans-serif",
   };
 
   const linkHoverStyle: React.CSSProperties = {
-    color: "#5d3fd3",
+    color: "var(--accent-primary)",
   };
 
   const handleLinkHover = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -49,13 +54,14 @@ const Navbar = () => {
   };
 
   const handleLinkLeave = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.currentTarget.style.color = "#333333";
+    e.currentTarget.style.color = "var(--text-secondary)";
   };
 
   return (
     <nav style={navbarStyle}>
       <Link to="/" style={logoStyle}>
-        Mergex
+        <div style={{ width: "12px", height: "12px", background: "var(--accent-primary)" }}></div>
+        MERGEX
       </Link>
       <div style={navLinksContainerStyle}>
         <Link

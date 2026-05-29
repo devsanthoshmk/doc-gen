@@ -1,153 +1,72 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import Stepper from "../components/Stepper";
+import { IconCheck, IconRotateClockwise, IconArchive } from "@tabler/icons-react";
 
 export default function Success() {
   const navigate = useNavigate();
-  const [generateHover, setGenerateHover] = useState(false);
-  const [historyHover, setHistoryHover] = useState(false);
-
-  const containerStyle: React.CSSProperties = {
-    minHeight: "80vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#f9f9f7",
-    padding: "24px",
-  };
-
-  const cardStyle: React.CSSProperties = {
-    backgroundColor: "#ffffff",
-    borderRadius: "16px",
-    border: "1px solid #e5e7eb",
-    maxWidth: "640px",
-    margin: "16px auto",
-    padding: "32px",
-    textAlign: "center",
-    maxHeight: "80vh",
-    overflowY: "auto",
-  };
-
-  const contentStyle: React.CSSProperties = {
-    textAlign: "center",
-    maxWidth: "600px",
-  };
-
-  const checkmarkCircleStyle: React.CSSProperties = {
-    width: "100px",
-    height: "100px",
-    borderRadius: "50%",
-    backgroundColor: "#5d3fd3",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    margin: "0 auto 32px",
-    fontSize: "50px",
-    color: "white",
-    fontWeight: "bold",
-    boxShadow: "0 4px 16px rgba(16, 185, 129, 0.3)",
-  };
-
-  const titleStyle: React.CSSProperties = {
-    fontSize: "30px",
-    fontWeight: "bold",
-    color: "#1a1c1b",
-    marginBottom: "12px",
-    fontFamily: "Playfair Display, serif",
-  };
-
-  const subtitleStyle: React.CSSProperties = {
-    fontSize: "12px",
-    color: "#44474d",
-    marginBottom: "20px",
-    lineHeight: "1.6",
-    fontFamily: "DM Sans, sans-serif",
-  };
-
-  const buttonContainerStyle: React.CSSProperties = {
-    display: "flex",
-    gap: "16px",
-    justifyContent: "center",
-    flexWrap: "wrap",
-  };
-
-  const generateButtonStyle: React.CSSProperties = {
-    backgroundColor: "#5d3fd3",
-    color: "white",
-    border: "none",
-    padding: "14px 32px",
-    borderRadius: "4px",
-    fontSize: "15px",
-    fontWeight: "600",
-    cursor: "pointer",
-    transition: "background-color 0.2s",
-  };
-
-  const generateButtonHoverStyle: React.CSSProperties = {
-    ...generateButtonStyle,
-    backgroundColor: "#4e2ca8",
-  };
-
-  const historyButtonStyle: React.CSSProperties = {
-    backgroundColor: "white",
-    color: "#5d3fd3",
-    border: "2px solid #5d3fd3",
-    padding: "14px 32px",
-    borderRadius: "4px",
-    fontSize: "15px",
-    fontWeight: "600",
-    cursor: "pointer",
-    transition: "all 0.2s",
-  };
-
-  const historyButtonHoverStyle: React.CSSProperties = {
-    ...historyButtonStyle,
-    backgroundColor: "#f3e8ff",
-  };
 
   return (
-    <>
+    <div className="animate-fade-up" style={{ minHeight: "80vh", display: "flex", flexDirection: "column" }}>
       <Stepper currentStep={4} />
-      <div style={containerStyle}>
-        <div style={cardStyle}>
-          <div style={contentStyle}>
-            {/* Green Checkmark Circle */}
-            <div style={checkmarkCircleStyle}>✓</div>
+      
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px" }}>
+        <div className="glass-panel" style={{ width: "100%", maxWidth: "800px", padding: "80px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+          
+          <div style={{
+            position: "absolute",
+            top: "-100px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "300px",
+            height: "300px",
+            background: "var(--accent-glow)",
+            filter: "blur(80px)",
+            zIndex: 0,
+            pointerEvents: "none"
+          }}></div>
 
-            {/* Title */}
-            <h1 style={titleStyle}>Document Sent Successfully!</h1>
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <div style={{
+              width: "120px",
+              height: "120px",
+              borderRadius: "50%",
+              background: "var(--accent-primary)",
+              color: "var(--bg-base)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 40px",
+              boxShadow: "0 0 40px var(--accent-glow)",
+            }}>
+              <IconCheck size={64} stroke={3} />
+            </div>
 
-            {/* Subtitle */}
-            <p style={subtitleStyle}>
-              Your document and email have been sent to the client.
+            <h1 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", textTransform: "uppercase", marginBottom: "16px", color: "var(--text-primary)" }}>
+              Transmission <span style={{ color: "var(--accent-primary)" }}>Successful.</span>
+            </h1>
+            
+            <p style={{ color: "var(--text-secondary)", fontSize: "16px", maxWidth: "400px", margin: "0 auto 60px", lineHeight: 1.6 }}>
+              Your generated document and corresponding email have been successfully delivered to the recipient network.
             </p>
 
-            {/* Buttons */}
-            <div style={buttonContainerStyle}>
+            <div style={{ display: "flex", gap: "24px", justifyContent: "center" }}>
               <button
-                style={
-                  generateHover ? generateButtonHoverStyle : generateButtonStyle
-                }
-                onMouseEnter={() => setGenerateHover(true)}
-                onMouseLeave={() => setGenerateHover(false)}
+                className="btn-primary"
                 onClick={() => navigate("/generate/select-template")}
               >
-                Generate Another Document
+                <IconRotateClockwise size={18} /> Initialize New
               </button>
               <button
-                style={
-                  historyHover ? historyButtonHoverStyle : historyButtonStyle
-                }
-                onMouseEnter={() => setHistoryHover(true)}
-                onMouseLeave={() => setHistoryHover(false)}
-                onClick={() => navigate("#")}
+                className="btn-outline"
+                onClick={() => navigate("/history")}
               >
-                View History
+                <IconArchive size={18} /> Access Archive
               </button>
             </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

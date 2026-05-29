@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { dummyEmail } from "../data/dummyEmail";
 import Stepper from "../components/Stepper";
+import { IconMailFast, IconX } from "@tabler/icons-react";
 
 export default function ReviewEmail() {
   const [pageState, setPageState] = useState("loading");
@@ -13,8 +14,7 @@ export default function ReviewEmail() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setPageState("review");
-    }, 3000);
-
+    }, 2000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -24,9 +24,7 @@ export default function ReviewEmail() {
         "To: " + dummyEmail.to,
         "Subject: " + dummyEmail.subject,
         "---",
-        ...dummyEmail.body
-          .split("\n")
-          .filter((line) => line !== undefined && line !== null),
+        ...dummyEmail.body.split("\n").filter(Boolean),
       ];
 
       let lineIndex = 0;
@@ -37,110 +35,19 @@ export default function ReviewEmail() {
         } else {
           clearInterval(interval);
         }
-      }, 50);
+      }, 40);
 
       return () => clearInterval(interval);
     }
   }, [pageState]);
 
-  const handleApprove = () => {
-    navigate("/generate/success");
-  };
-
-  const handleRejectClick = () => {
-    setShowFeedbackModal(true);
-  };
-
-  const handleSubmitFeedback = () => {
-    console.log("Feedback submitted:", feedback);
-    setFeedback("");
-    setShowFeedbackModal(false);
-  };
-
-  const handleCancelFeedback = () => {
-    setFeedback("");
-    setShowFeedbackModal(false);
-  };
-
-  const containerStyle: React.CSSProperties = {
-    padding: "32px",
-    minHeight: "100vh",
-    backgroundColor: "#f9f9f7",
-  };
-
-  const contentWrapperStyle: React.CSSProperties = {
-    maxWidth: "1400px",
-    margin: "0 auto",
-    display: "flex",
-    gap: "32px",
-  };
-
-  const leftColumnStyle: React.CSSProperties = {
-    width: "36%",
-    display: "flex",
-    flexDirection: "column",
-  };
-
-  const rightColumnStyle: React.CSSProperties = {
-    width: "65%",
-    display: "flex",
-    flexDirection: "column",
-  };
-
-  const titleStyle: React.CSSProperties = {
-    fontSize: "32px",
-    fontWeight: "600",
+  const skeletonBarStyle = (width: string): React.CSSProperties => ({
+    background: "var(--border-strong)",
+    height: "12px",
     marginBottom: "16px",
-    color: "#1a1c1b",
-    fontFamily: "Playfair Display, serif",
-  };
-
-  const subtitleStyle: React.CSSProperties = {
-    fontSize: "16px",
-    fontWeight: "400",
-    color: "#44474d",
-    marginBottom: "24px",
-    fontFamily: "DM Sans, sans-serif",
-  };
-
-  const buttonStyle: (
-    variant: "primary" | "outline-purple" | "outline-red",
-  ) => React.CSSProperties = (variant) => {
-    const baseStyle: React.CSSProperties = {
-      width: "100%",
-      padding: "12px 24px",
-      fontSize: "16px",
-      fontWeight: "600",
-      border: "2px solid",
-      borderRadius: "4px",
-      cursor: "pointer",
-      transition: "all 0.3s ease",
-      marginBottom: "12px",
-    };
-
-    if (variant === "primary") {
-      return {
-        ...baseStyle,
-        backgroundColor: "#5d3fd3",
-        color: "white",
-        borderColor: "#5d3fd3",
-      };
-    } else if (variant === "outline-purple") {
-      return {
-        ...baseStyle,
-        backgroundColor: "transparent",
-        color: "#5d3fd3",
-        borderColor: "#5d3fd3",
-      };
-    } else {
-      return {
-        ...baseStyle,
-        backgroundColor: "transparent",
-        color: "#ef4444",
-        borderColor: "#ef4444",
-      };
-    }
-  };
+    width,
+    borderRadius: "2px",
+  });
 
   const modalOverlayStyle: React.CSSProperties = {
     position: "fixed",
@@ -148,295 +55,191 @@ export default function ReviewEmail() {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    backdropFilter: "blur(8px)",
     display: showFeedbackModal ? "flex" : "none",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1000,
   };
 
-  const modalContentStyle: React.CSSProperties = {
-    backgroundColor: "white",
-    padding: "40px",
-    borderRadius: "12px",
-    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
-    maxWidth: "500px",
-    width: "90%",
-  };
-
-  const modalTitleStyle: React.CSSProperties = {
-    fontSize: "20px",
-    fontWeight: "600",
-    color: "#1a1a1a",
-    marginBottom: "16px",
-  };
-
-  const feedbackTextareaStyle: React.CSSProperties = {
-    width: "100%",
-    minHeight: "150px",
-    padding: "12px",
-    fontSize: "14px",
-    fontFamily: "inherit",
-    border: "2px solid #e0e0e0",
-    borderRadius: "6px",
-    resize: "vertical",
-    boxSizing: "border-box",
-    marginBottom: "16px",
-  };
-
-  const modalButtonContainerStyle: React.CSSProperties = {
-    display: "flex",
-    gap: "12px",
-    justifyContent: "flex-end",
-  };
-
-  const modalButtonStyle: (
-    variant: "primary" | "secondary",
-  ) => React.CSSProperties = (variant) => ({
-    padding: "10px 24px",
-    fontSize: "14px",
-    fontWeight: "600",
-    border: "2px solid",
-    borderRadius: "6px",
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    backgroundColor: variant === "primary" ? "#5d3fd3" : "transparent",
-    color: variant === "primary" ? "white" : "#5d3fd3",
-    borderColor: "#5d3fd3",
-  });
-
-  const cardStyle: React.CSSProperties = {
-    backgroundColor: "white",
-    borderRadius: "6px",
-    boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-    flex: 1,
-    padding: "32px",
-    border: "1px solid rgba(0,0,0,0.1)",
-  };
-
-  const leftColumnCardStyle: React.CSSProperties = {
-    backgroundColor: "#ffffff",
-    borderRadius: "16px",
-    border: "1px solid #e5e7eb",
-    overflow: "hidden",
-  };
-
-  const gradientBarStyle: React.CSSProperties = {
-    height: "3px",
-    background: "linear-gradient(90deg, #5d3fd3 0%, #7c3aed 100%)",
-    width: "100%",
-  };
-
-  const leftColumnPaddingStyle: React.CSSProperties = {
-    padding: "32px",
-  };
-
-  const aiGeneratedLabelStyle: React.CSSProperties = {
-    color: "#5d3fd3",
-    fontSize: "12px",
-    fontWeight: "600",
-    letterSpacing: "1px",
-    marginBottom: "12px",
-  };
-
-  const skeletonLineStyle: React.CSSProperties = {
-    height: "12px",
-    backgroundColor: "#e8e8e8",
-    borderRadius: "4px",
-    marginBottom: "12px",
-    animation: "pulse 2s ease-in-out infinite",
-  };
-
-  const emailLabelStyle: React.CSSProperties = {
-    fontSize: "12px",
-    fontWeight: "600",
-    color: "#666",
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
-    marginBottom: "4px",
-    fontFamily: "DM Sans, sans-serif",
-  };
-
-  const emailFieldStyle: React.CSSProperties = {
-    fontSize: "14px",
-    color: "#333",
-    marginBottom: "12px",
-    wordBreak: "break-all",
-    fontFamily: "DM Sans, sans-serif",
-  };
-
-  const dividerStyle: React.CSSProperties = {
-    height: "1px",
-    backgroundColor: "#e0e0e0",
-    margin: "16px 0",
-  };
-
-  const emailBodyStyle: React.CSSProperties = {
-    fontSize: "14px",
-    color: "#333",
-    lineHeight: "1.6",
-    whiteSpace: "pre-wrap",
-    wordWrap: "break-word",
-    fontFamily: "DM Sans, sans-serif",
-  };
-
   const keyframes = `
-    @keyframes pulse {
+    @keyframes pulse-dark {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+      50% { opacity: 0.3; }
+    }
+    .skeleton-dark {
+      animation: pulse-dark 1.5s ease-in-out infinite;
     }
     @keyframes lineReveal {
-      from {
-        opacity: 0;
-        transform: translateY(4px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   `;
 
   return (
-    <>
-      <style>{keyframes}</style>
+    <div className="animate-fade-up" style={{ height: "calc(100vh - 120px)", display: "flex", flexDirection: "column", paddingBottom: "40px" }}>
       <Stepper currentStep={3} />
-      <div style={containerStyle}>
-        <div style={contentWrapperStyle}>
-          {/* Left Column */}
-          <div style={leftColumnStyle}>
-            {pageState === "loading" ? (
-              <>
-                <h1 style={titleStyle}>Generating Email...</h1>
-                <p style={subtitleStyle}>
-                  Please wait while we prepare your email
-                </p>
-              </>
-            ) : (
-              <div style={leftColumnCardStyle}>
-                <div style={gradientBarStyle}></div>
-                <div style={leftColumnPaddingStyle}>
-                  <div style={aiGeneratedLabelStyle}>✦ AI GENERATED</div>
-                  <h1 style={titleStyle}>Email Ready</h1>
-                  <p style={subtitleStyle}>Review your generated email</p>
-                  <div style={{ marginTop: "24px" }}>
-                    <button
-                      style={buttonStyle("primary")}
-                      onClick={handleApprove}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      style={buttonStyle("outline-red")}
-                      onClick={handleRejectClick}
-                    >
-                      Reject with Feedback
-                    </button>
-                  </div>
-                </div>
+      <style>{keyframes}</style>
+      
+      <div style={{ display: "flex", gap: "2px", background: "var(--border-strong)", border: "1px solid var(--border-strong)", flex: 1, minHeight: 0 }}>
+        
+        {/* Left Column (Input) */}
+        <div style={{ width: "35%", background: "var(--bg-base)", padding: "40px", display: "flex", flexDirection: "column", overflowY: "auto" }}>
+          {pageState === "loading" ? (
+            <div style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "center" }}>
+              <div style={{ color: "var(--text-secondary)", fontSize: "12px", fontWeight: 700, letterSpacing: "2px", marginBottom: "16px" }}>
+                PROCESSING
               </div>
-            )}
-          </div>
-
-          {/* Right Column */}
-          <div style={rightColumnStyle}>
-            <div style={cardStyle}>
-              {pageState === "loading" ? (
-                <>
-                  {["90%", "75%", "85%", "60%", "80%", "70%", "90%", "65%"].map(
-                    (width, index) => (
-                      <div
-                        key={index}
-                        style={{
-                          ...skeletonLineStyle,
-                          width,
-                        }}
-                      ></div>
-                    ),
-                  )}
-                </>
-              ) : (
-                <div>
-                  {visibleLines.map((line, index) => {
-                    if (!line) return null;
-
-                    if (line === "---") {
-                      return (
-                        <div
-                          key={index}
-                          style={{
-                            ...dividerStyle,
-                            animation: `lineReveal 0.4s ease ${index * 0.05}s both`,
-                          }}
-                        ></div>
-                      );
-                    } else if (
-                      line.startsWith("To:") ||
-                      line.startsWith("Subject:")
-                    ) {
-                      return (
-                        <div
-                          key={index}
-                          style={{
-                            animation: `lineReveal 0.4s ease ${index * 0.05}s both`,
-                            marginBottom: "8px",
-                          }}
-                        >
-                          <div style={emailLabelStyle}>
-                            {line.split(":")[0]}:
-                          </div>
-                          <div style={emailFieldStyle}>
-                            {line.substring(line.indexOf(":") + 2)}
-                          </div>
-                        </div>
-                      );
-                    } else {
-                      return (
-                        <div
-                          key={index}
-                          style={{
-                            ...emailBodyStyle,
-                            animation: `lineReveal 0.4s ease ${index * 0.05}s both`,
-                          }}
-                        >
-                          {line}
-                        </div>
-                      );
-                    }
-                  })}
-                </div>
-              )}
+              <h2 style={{ fontSize: "32px", fontFamily: "Syne, sans-serif", marginBottom: "24px" }}>
+                Generating Dispatch...
+              </h2>
+              <p style={{ color: "var(--text-secondary)", fontSize: "14px", lineHeight: 1.6 }}>
+                Synthesizing document data into email format.
+              </p>
             </div>
-          </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "center" }}>
+              <div style={{ color: "var(--accent-primary)", fontSize: "12px", fontWeight: 700, letterSpacing: "2px", marginBottom: "16px" }}>
+                STATUS: READY
+              </div>
+              <h2 style={{ fontSize: "32px", fontFamily: "Syne, sans-serif", marginBottom: "24px" }}>
+                Dispatch Ready.
+              </h2>
+              <p style={{ color: "var(--text-secondary)", fontSize: "14px", marginBottom: "48px", lineHeight: 1.6 }}>
+                Review the synthesized email. Approve to execute delivery or reject to recalibrate.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <button
+                  className="btn-primary"
+                  onClick={() => navigate("/generate/success")}
+                  style={{ width: "100%", justifyContent: "space-between" }}
+                >
+                  Execute Delivery <IconMailFast size={18} />
+                </button>
+                <button
+                  className="btn-outline"
+                  onClick={() => setShowFeedbackModal(true)}
+                  style={{ width: "100%", color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.3)" }}
+                >
+                  Reject & Recalibrate
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column (Viewer) */}
+        <div style={{ width: "65%", background: "var(--bg-surface)", padding: "60px", position: "relative", overflowY: "auto" }}>
+          {pageState === "loading" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px", paddingTop: "40px" }}>
+              {["80%", "90%", "60%", "75%", "85%", "40%"].map((w, i) => (
+                <div key={i} className="skeleton-dark" style={skeletonBarStyle(w)} />
+              ))}
+            </div>
+          ) : (
+            <div style={{ height: "100%", overflowY: "auto", paddingRight: "20px" }}>
+              {visibleLines.map((line, index) => {
+                if (!line) return null;
+                if (line === "---") {
+                  return (
+                    <div
+                      key={index}
+                      style={{
+                        height: "1px",
+                        backgroundColor: "var(--border-strong)",
+                        margin: "24px 0",
+                        animation: `lineReveal 0.4s ease ${index * 0.03}s both`,
+                      }}
+                    ></div>
+                  );
+                } else if (line.startsWith("To:") || line.startsWith("Subject:")) {
+                  return (
+                    <div
+                      key={index}
+                      style={{
+                        animation: `lineReveal 0.4s ease ${index * 0.03}s both`,
+                        marginBottom: "12px",
+                        display: "flex",
+                        alignItems: "baseline",
+                        gap: "12px",
+                      }}
+                    >
+                      <div style={{ fontSize: "12px", color: "var(--text-secondary)", letterSpacing: "0.1em", textTransform: "uppercase", width: "80px" }}>
+                        {line.split(":")[0]}:
+                      </div>
+                      <div style={{ fontSize: "16px", color: "var(--text-primary)", fontFamily: "Outfit, sans-serif", fontWeight: 500 }}>
+                        {line.substring(line.indexOf(":") + 2)}
+                      </div>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div
+                      key={index}
+                      style={{
+                        fontSize: "15px",
+                        color: "var(--text-primary)",
+                        lineHeight: 1.8,
+                        fontFamily: "Outfit, sans-serif",
+                        animation: `lineReveal 0.4s ease ${index * 0.03}s both`,
+                        marginBottom: "8px",
+                      }}
+                    >
+                      {line}
+                    </div>
+                  );
+                }
+              })}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Feedback Modal */}
       <div style={modalOverlayStyle}>
-        <div style={modalContentStyle}>
-          <h2 style={modalTitleStyle}>Provide Feedback</h2>
+        <div className="glass-panel" style={{ width: "100%", maxWidth: "500px", padding: "40px", position: "relative" }}>
+          <button 
+            style={{ position: "absolute", top: "20px", right: "20px", background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer" }}
+            onClick={() => setShowFeedbackModal(false)}
+          >
+            <IconX size={24} />
+          </button>
+          <h2 style={{ fontSize: "24px", fontFamily: "Syne, sans-serif", marginBottom: "24px" }}>Recalibrate Dispatch</h2>
           <textarea
-            style={feedbackTextareaStyle}
-            placeholder="Please describe what needs to be changed..."
+            style={{
+              width: "100%",
+              height: "150px",
+              background: "var(--bg-base)",
+              border: "1px solid var(--border-strong)",
+              color: "var(--text-primary)",
+              padding: "16px",
+              fontSize: "14px",
+              resize: "none",
+              marginBottom: "24px",
+              fontFamily: "Outfit, sans-serif",
+              outline: "none"
+            }}
+            placeholder="Instruct the AI on what needs to be changed..."
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
           />
-          <div style={modalButtonContainerStyle}>
-            <button
-              style={modalButtonStyle("secondary")}
-              onClick={handleCancelFeedback}
-            >
-              Cancel
-            </button>
-            <button
-              style={modalButtonStyle("primary")}
-              onClick={handleSubmitFeedback}
-            >
-              Submit
-            </button>
-          </div>
+          <button
+            className="btn-primary"
+            style={{ width: "100%" }}
+            onClick={() => {
+              setFeedback("");
+              setShowFeedbackModal(false);
+              setVisibleLines([]); // Clear existing lines before going back to loading
+              setPageState("loading");
+              setTimeout(() => setPageState("review"), 2000);
+            }}
+          >
+            Submit Instructions
+          </button>
         </div>
       </div>
-    </>
+
+    </div>
   );
 }

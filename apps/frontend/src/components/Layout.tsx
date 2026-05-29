@@ -6,21 +6,12 @@ interface LayoutProps {
 }
 
 const Layout = ({ children }: LayoutProps) => {
-  const layoutStyle: React.CSSProperties = {
-    display: "flex",
-    flexDirection: "column",
-    minHeight: "100vh",
-  };
-
-  const mainContentStyle: React.CSSProperties = {
-    flex: 1,
-    padding: "2rem",
-  };
-
   return (
-    <div style={layoutStyle}>
+    <div className="layout" style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <Navbar />
-      <main style={mainContentStyle}>{children}</main>
+      <main style={{ flex: 1, padding: "4rem 2rem", maxWidth: "1400px", margin: "0 auto", width: "100%" }}>
+        {children}
+      </main>
     </div>
   );
 };

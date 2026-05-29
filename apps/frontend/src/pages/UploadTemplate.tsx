@@ -1,5 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { IconArrowLeft, IconCloudUpload, IconFileTypePdf, IconFileTypeDocx, IconFileTypeTxt, IconCheck, IconLock, IconUsers, IconWorld, IconArrowRight, IconDotsVertical, IconAlertCircle } from "@tabler/icons-react";
 
 interface UploadedFile {
   id: string;
@@ -7,7 +8,7 @@ interface UploadedFile {
   category: string;
   status: "Processing..." | "Success" | "Corrupted File";
   uploadedTime: string;
-  icon: string;
+  icon: ReactNode;
 }
 
 export default function UploadTemplate() {
@@ -24,7 +25,7 @@ export default function UploadTemplate() {
       category: "Legal",
       status: "Success",
       uploadedTime: "2 hours ago",
-      icon: "picture_as_pdf",
+      icon: <IconFileTypePdf size={20} color="var(--accent-primary)" />,
     },
     {
       id: "2",
@@ -32,7 +33,7 @@ export default function UploadTemplate() {
       category: "HR",
       status: "Success",
       uploadedTime: "5 hours ago",
-      icon: "description",
+      icon: <IconFileTypeDocx size={20} color="var(--accent-primary)" />,
     },
     {
       id: "3",
@@ -40,7 +41,7 @@ export default function UploadTemplate() {
       category: "Finance",
       status: "Corrupted File",
       uploadedTime: "Yesterday",
-      icon: "article",
+      icon: <IconFileTypeTxt size={20} color="#ef4444" />,
     },
   ]);
 
@@ -76,7 +77,6 @@ export default function UploadTemplate() {
   const handleProcessTemplate = () => {
     if (!selectedFile) return;
 
-    // Create a new mock file record in "Processing" state
     const newFileId = Math.random().toString(36).substring(7);
     const newFileRecord: UploadedFile = {
       id: newFileId,
@@ -85,16 +85,15 @@ export default function UploadTemplate() {
       status: "Processing...",
       uploadedTime: "Just now",
       icon: selectedFile.name.endsWith(".pdf")
-        ? "picture_as_pdf"
+        ? <IconFileTypePdf size={20} color="var(--accent-primary)" />
         : selectedFile.name.endsWith(".docx")
-        ? "description"
-        : "article",
+        ? <IconFileTypeDocx size={20} color="var(--accent-primary)" />
+        : <IconFileTypeTxt size={20} color="var(--text-secondary)" />,
     };
 
     setRecentUploads([newFileRecord, ...recentUploads]);
-    setSelectedFile(null); // Reset dropzone
+    setSelectedFile(null); 
 
-    // Mock completing processing after 3.5 seconds
     setTimeout(() => {
       setRecentUploads((prev) =>
         prev.map((f) => (f.id === newFileId ? { ...f, status: "Success" } : f))
@@ -103,81 +102,64 @@ export default function UploadTemplate() {
   };
 
   return (
-    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "2rem 48px 4rem 48px" }}>
-      {/* Back to library & title */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "3rem" }}>
+    <div className="animate-fade-up" style={{ maxWidth: "1400px", margin: "0 auto", padding: "60px 40px" }}>
+      {/* Header */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px", marginBottom: "60px" }}>
         <button
           onClick={() => navigate("/templates")}
           style={{
             background: "none",
             border: "none",
-            color: "#5d3fd3",
-            fontFamily: "DM Sans",
-            fontWeight: "700",
-            fontSize: "14px",
+            color: "var(--accent-primary)",
+            fontFamily: "Outfit, sans-serif",
+            fontWeight: 700,
+            fontSize: "12px",
+            letterSpacing: "1px",
             display: "flex",
             alignItems: "center",
-            gap: "6px",
+            gap: "8px",
             cursor: "pointer",
             padding: 0,
-            width: "max-content",
+            textTransform: "uppercase"
           }}
         >
-          <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>
-            arrow_back
-          </span>
-          Back to Template Library
+          <IconArrowLeft size={16} /> RETURN TO REPOSITORY
         </button>
         <div>
-          <h2
-            className="font-playfair"
-            style={{ fontSize: "3rem", fontWeight: "700", color: "#1a1c1b", marginBottom: "0.5rem" }}
-          >
-            Upload Template
-          </h2>
-          <p style={{ color: "#44474d", fontSize: "18px", fontFamily: "DM Sans" }}>
-            Create high-performance AI-ready templates by uploading your source documents. Supported
-            formats: .pdf, .docx, .txt
+          <h1 style={{ fontSize: "clamp(2.5rem, 4vw, 4rem)", fontFamily: "Syne, sans-serif", color: "var(--text-primary)", marginBottom: "16px" }}>
+            Upload Schema
+          </h1>
+          <p style={{ color: "var(--text-secondary)", fontSize: "16px", maxWidth: "600px", lineHeight: 1.6 }}>
+            Initialize structural frameworks by uploading source documents. 
+            Supported formats: PDF, DOCX, TXT.
           </p>
         </div>
       </div>
 
-      {/* Balanced layout Grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr",
-          gap: "2rem",
-          marginBottom: "4rem",
-        }}
-        className="lg:grid-cols-12"
-      >
-        {/* Left: Upload Drag-and-Drop Canvas */}
+      {/* Grid Layout */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "32px", marginBottom: "80px" }}>
+        {/* Left: Drag-and-Drop */}
         <div
           onDragEnter={handleDrag}
           onDragOver={handleDrag}
           onDragLeave={handleDrag}
           onDrop={handleDrop}
           onClick={triggerFileInput}
-          className="transition-soft"
           style={{
-            gridColumn: "span 8",
-            border: `2px dashed ${dragActive ? "#5d3fd3" : "rgba(10, 25, 47, 0.1)"}`,
+            border: `1px dashed ${dragActive ? "var(--accent-primary)" : "var(--border-strong)"}`,
             backgroundColor: dragActive
-              ? "rgba(93, 63, 211, 0.05)"
-              : selectedFile
-              ? "rgba(93, 63, 211, 0.01)"
-              : "rgba(93, 63, 211, 0.02)",
+              ? "rgba(204, 255, 0, 0.05)"
+              : "var(--bg-surface)",
             borderRadius: "12px",
-            minHeight: "440px",
+            minHeight: "480px",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            padding: "2rem",
+            padding: "40px",
             cursor: "pointer",
-            boxShadow: dragActive ? "0 4px 20px rgba(93, 63, 211, 0.1)" : "none",
-            position: "relative",
+            transition: "all 0.3s ease",
+            boxShadow: dragActive ? "0 0 40px rgba(204, 255, 0, 0.1)" : "none",
           }}
         >
           <input
@@ -189,413 +171,242 @@ export default function UploadTemplate() {
           />
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
-            <div
-              style={{
-                width: "80px",
-                height: "80px",
-                backgroundColor: "#e6deff",
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "transform 0.18s ease",
-              }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: "36px", color: "#5d3fd3" }}>
-                cloud_upload
-              </span>
+            <div style={{ 
+              width: "80px", 
+              height: "80px", 
+              background: "var(--bg-elevated)", 
+              border: "1px solid var(--border-subtle)",
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center",
+              color: dragActive ? "var(--accent-primary)" : "var(--text-primary)",
+              transition: "color 0.3s ease",
+              boxShadow: dragActive ? "0 0 20px rgba(204, 255, 0, 0.2)" : "none"
+            }}>
+              <IconCloudUpload size={40} stroke={1.5} />
             </div>
+            
             <div style={{ textAlign: "center" }}>
               {selectedFile ? (
                 <>
-                  <h3
-                    className="font-playfair"
-                    style={{ fontSize: "24px", color: "#0A192F", marginBottom: "6px" }}
-                  >
-                    File selected successfully
+                  <h3 style={{ fontSize: "24px", fontFamily: "Syne, sans-serif", color: "var(--accent-primary)", marginBottom: "8px" }}>
+                    File Selected
                   </h3>
-                  <p style={{ color: "#5d3fd3", fontWeight: "700", fontSize: "15px" }}>
-                    {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                  <p style={{ color: "var(--text-primary)", fontWeight: 500, fontSize: "16px", fontFamily: "Outfit, sans-serif" }}>
+                    {selectedFile.name}
+                  </p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "12px", marginTop: "4px" }}>
+                    ({(selectedFile.size / 1024).toFixed(1)} KB)
                   </p>
                 </>
               ) : (
                 <>
-                  <h3
-                    className="font-playfair"
-                    style={{ fontSize: "24px", color: "#0A192F", marginBottom: "6px" }}
-                  >
-                    Drag &amp; drop your files here
+                  <h3 style={{ fontSize: "24px", fontFamily: "Syne, sans-serif", color: "var(--text-primary)", marginBottom: "8px" }}>
+                    Drag & Drop Files
                   </h3>
-                  <p style={{ color: "#44474d", fontSize: "14px" }}>
-                    or <span style={{ color: "#5d3fd3", fontWeight: "700", textDecoration: "underline" }}>browse from your computer</span>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "14px" }}>
+                    or <span style={{ color: "var(--accent-primary)", cursor: "pointer", borderBottom: "1px solid var(--accent-primary)" }}>browse file system</span>
                   </p>
                 </>
               )}
             </div>
-            <div style={{ display: "flex", gap: "16px", marginTop: "16px" }}>
-              <div
-                style={{
+            
+            <div style={{ display: "flex", gap: "16px", marginTop: "24px" }}>
+              {[
+                { icon: <IconFileTypePdf size={16} />, label: "PDF" },
+                { icon: <IconFileTypeDocx size={16} />, label: "DOCX" },
+                { icon: <IconFileTypeTxt size={16} />, label: "TXT" }
+              ].map(t => (
+                <div key={t.label} style={{
                   padding: "8px 16px",
-                  backgroundColor: "#eeeeec",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(10, 25, 47, 0.05)",
+                  background: "var(--bg-elevated)",
+                  border: "1px solid var(--border-subtle)",
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: "14px", color: "#ba1a1a" }}>
-                  picture_as_pdf
-                </span>
-                <span style={{ fontSize: "12px", fontFamily: "JetBrains Mono" }}>PDF</span>
-              </div>
-              <div
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#eeeeec",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(10, 25, 47, 0.05)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: "14px", color: "#5d3fd3" }}>
-                  description
-                </span>
-                <span style={{ fontSize: "12px", fontFamily: "JetBrains Mono" }}>DOCX</span>
-              </div>
-              <div
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#eeeeec",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(10, 25, 47, 0.05)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: "14px", color: "#75777e" }}>
-                  article
-                </span>
-                <span style={{ fontSize: "12px", fontFamily: "JetBrains Mono" }}>TXT</span>
-              </div>
+                  color: "var(--text-secondary)"
+                }}>
+                  {t.icon}
+                  <span style={{ fontSize: "11px", letterSpacing: "1px" }}>{t.label}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Right: Side Configuration Panel */}
-        <div
-          style={{
-            gridColumn: "span 4",
-            opacity: selectedFile ? 1 : 0.4,
-            filter: selectedFile ? "none" : "grayscale(80%)",
-            pointerEvents: selectedFile ? "auto" : "none",
-            transition: "all 0.5s ease",
-          }}
-        >
-          <div
-            className="sheet-shadow"
-            style={{
-              backgroundColor: "#eeeeec",
-              border: "1px solid rgba(10, 25, 47, 0.1)",
-              borderRadius: "12px",
-              padding: "32px",
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              gap: "32px",
-            }}
-          >
-            <h4 className="font-headline-md" style={{ fontSize: "18px", color: "#0A192F" }}>
-              Configuration
-            </h4>
-
-            {/* Category selection */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <label
-                style={{
-                  fontSize: "11px",
-                  fontWeight: "700",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  color: "#44474d",
-                }}
-              >
-                Template Category
-              </label>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                {["Legal", "HR", "Finance", "Other"].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveCategory(cat)}
-                    style={{
-                      padding: "12px",
-                      borderRadius: "4px",
-                      border: `1px solid ${activeCategory === cat ? "#5d3fd3" : "rgba(10, 25, 47, 0.1)"}`,
-                      backgroundColor: activeCategory === cat ? "rgba(93, 63, 211, 0.05)" : "#ffffff",
-                      fontFamily: "DM Sans",
-                      fontSize: "14px",
-                      fontWeight: activeCategory === cat ? "700" : "400",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      cursor: "pointer",
-                      transition: "all 0.18s ease",
-                    }}
-                  >
-                    <span>{cat}</span>
-                    <span
-                      className="material-symbols-outlined"
-                      style={{
-                        fontSize: "16px",
-                        color: "#5d3fd3",
-                        opacity: activeCategory === cat ? 1 : 0,
-                      }}
-                    >
-                      check_circle
-                    </span>
-                  </button>
-                ))}
-              </div>
+        {/* Right: Config Panel */}
+        <div style={{
+          opacity: selectedFile ? 1 : 0.4,
+          filter: selectedFile ? "none" : "grayscale(100%)",
+          pointerEvents: selectedFile ? "auto" : "none",
+          transition: "all 0.5s ease",
+          display: "flex",
+          flexDirection: "column",
+          gap: "32px",
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border-subtle)",
+          padding: "40px",
+          borderRadius: "12px"
+        }}>
+          <div>
+            <div style={{ color: "var(--accent-primary)", fontSize: "10px", fontWeight: 700, letterSpacing: "2px", marginBottom: "8px", textTransform: "uppercase" }}>
+              Parameters
             </div>
+            <h3 style={{ fontSize: "24px", fontFamily: "Syne, sans-serif" }}>Configuration</h3>
+          </div>
 
-            {/* Privacy settings */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <label
-                style={{
-                  fontSize: "11px",
-                  fontWeight: "700",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  color: "#44474d",
-                }}
-              >
-                Accessibility
-              </label>
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {[
-                  { name: "Private", desc: "Only you can view and use", icon: "lock" },
-                  { name: "Team", desc: "Shared with workspace members", icon: "group" },
-                  { name: "Public", desc: "Available for all Pro users", icon: "public" },
-                ].map((priv) => {
-                  const isActive = activePrivacy === priv.name;
-                  return (
-                    <div
-                      key={priv.name}
-                      onClick={() => setActivePrivacy(priv.name)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "12px",
-                        borderRadius: "8px",
-                        border: `1px solid ${isActive ? "#5d3fd3" : "rgba(10, 25, 47, 0.05)"}`,
-                        backgroundColor: isActive ? "rgba(93, 63, 211, 0.05)" : "#ffffff",
-                        gap: "16px",
-                        cursor: "pointer",
-                        opacity: isActive ? 1 : 0.7,
-                        transition: "all 0.18s ease",
-                      }}
-                    >
-                      <span
-                        className="material-symbols-outlined"
-                        style={{ color: isActive ? "#5d3fd3" : "#44474d" }}
-                      >
-                        {priv.icon}
-                      </span>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                        <span
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: "500",
-                            color: "#0A192F",
-                          }}
-                        >
-                          {priv.name}
-                        </span>
-                        <span style={{ fontSize: "11px", color: "#44474d" }}>{priv.desc}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Process action button */}
-            <div style={{ marginTop: "auto" }}>
-              <button
-                onClick={handleProcessTemplate}
-                style={{
-                  width: "100%",
-                  padding: "16px",
-                  backgroundColor: "#5d3fd3",
-                  color: "#ffffff",
-                  fontWeight: "700",
-                  borderRadius: "4px",
-                  border: "none",
-                  boxShadow: "0 4px 14px rgba(93, 63, 211, 0.3)",
-                  cursor: "pointer",
-                }}
-              >
-                Process Template
-              </button>
+          {/* Category */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <label style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "var(--text-secondary)" }}>
+              Schema Domain
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              {["Legal", "HR", "Finance", "Other"].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  style={{
+                    padding: "16px",
+                    background: activeCategory === cat ? "var(--bg-elevated)" : "transparent",
+                    border: `1px solid ${activeCategory === cat ? "var(--accent-primary)" : "var(--border-strong)"}`,
+                    color: activeCategory === cat ? "var(--accent-primary)" : "var(--text-primary)",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease"
+                  }}
+                >
+                  <span>{cat}</span>
+                  {activeCategory === cat && <IconCheck size={16} />}
+                </button>
+              ))}
             </div>
           </div>
+
+          {/* Privacy */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <label style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "var(--text-secondary)" }}>
+              Access Level
+            </label>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {[
+                { name: "Private", desc: "Restricted to creator", icon: <IconLock size={18} /> },
+                { name: "Team", desc: "Shared within workspace", icon: <IconUsers size={18} /> },
+                { name: "Public", desc: "Global repository access", icon: <IconWorld size={18} /> },
+              ].map((priv) => {
+                const isActive = activePrivacy === priv.name;
+                return (
+                  <div
+                    key={priv.name}
+                    onClick={() => setActivePrivacy(priv.name)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "16px",
+                      background: isActive ? "var(--bg-elevated)" : "transparent",
+                      border: `1px solid ${isActive ? "var(--accent-primary)" : "var(--border-strong)"}`,
+                      gap: "16px",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      color: isActive ? "var(--accent-primary)" : "var(--text-secondary)"
+                    }}
+                  >
+                    {priv.icon}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <span style={{ fontSize: "14px", fontWeight: 500, color: isActive ? "var(--accent-primary)" : "var(--text-primary)" }}>
+                        {priv.name}
+                      </span>
+                      <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{priv.desc}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <button onClick={handleProcessTemplate} className="btn-primary" style={{ marginTop: "auto", justifyContent: "center", padding: "16px" }}>
+            INITIALIZE SCHEMA
+          </button>
         </div>
       </div>
 
       {/* Recent Uploads Table */}
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 className="font-headline-md" style={{ fontSize: "24px", color: "#0A192F" }}>
-            Recent Uploads
-          </h3>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+          <div>
+            <div style={{ color: "var(--accent-primary)", fontSize: "10px", fontWeight: 700, letterSpacing: "2px", marginBottom: "8px", textTransform: "uppercase" }}>
+              History
+            </div>
+            <h3 style={{ fontSize: "24px", fontFamily: "Syne, sans-serif" }}>Recent Ingestions</h3>
+          </div>
           <button
             onClick={() => navigate("/templates")}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#5d3fd3",
-              fontFamily: "DM Sans",
-              fontWeight: "700",
-              fontSize: "14px",
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-              cursor: "pointer",
-            }}
+            className="btn-outline"
+            style={{ padding: "8px 16px", fontSize: "12px" }}
           >
-            <span>View all history</span>
-            <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
-              arrow_forward
-            </span>
+            VIEW ALL <IconArrowRight size={14} />
           </button>
         </div>
 
-        <div
-          className="sheet-shadow"
-          style={{
-            backgroundColor: "#ffffff",
-            border: "1px solid rgba(10, 25, 47, 0.1)",
-            borderRadius: "12px",
-            overflow: "hidden",
-          }}
-        >
+        <div style={{ 
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border-subtle)",
+          borderRadius: "8px",
+          overflow: "hidden"
+        }}>
           <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ backgroundColor: "#eeeeec", borderBottom: "1px solid rgba(10, 25, 47, 0.05)" }}>
-                <th style={{ padding: "16px 24px", fontSize: "14px", color: "#44474d", fontWeight: "500" }}>
-                  File Name
-                </th>
-                <th style={{ padding: "16px 24px", fontSize: "14px", color: "#44474d", fontWeight: "500" }}>
-                  Category
-                </th>
-                <th style={{ padding: "16px 24px", fontSize: "14px", color: "#44474d", fontWeight: "500" }}>
-                  Status
-                </th>
-                <th style={{ padding: "16px 24px", fontSize: "14px", color: "#44474d", fontWeight: "500" }}>
-                  Uploaded
-                </th>
+              <tr style={{ background: "var(--bg-elevated)", borderBottom: "1px solid var(--border-strong)" }}>
+                <th style={{ padding: "16px 24px", fontSize: "11px", fontWeight: 700, letterSpacing: "1px", color: "var(--text-secondary)", textTransform: "uppercase" }}>Identifier</th>
+                <th style={{ padding: "16px 24px", fontSize: "11px", fontWeight: 700, letterSpacing: "1px", color: "var(--text-secondary)", textTransform: "uppercase" }}>Domain</th>
+                <th style={{ padding: "16px 24px", fontSize: "11px", fontWeight: 700, letterSpacing: "1px", color: "var(--text-secondary)", textTransform: "uppercase" }}>State</th>
+                <th style={{ padding: "16px 24px", fontSize: "11px", fontWeight: 700, letterSpacing: "1px", color: "var(--text-secondary)", textTransform: "uppercase" }}>Timestamp</th>
                 <th style={{ padding: "16px 24px" }} />
               </tr>
             </thead>
             <tbody>
               {recentUploads.map((file) => (
-                <tr
-                  key={file.id}
-                  style={{
-                    borderBottom: "1px solid rgba(10, 25, 47, 0.05)",
-                    transition: "background-color 0.18s ease",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f9f9f7")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                >
+                <tr key={file.id} style={{ borderBottom: "1px solid var(--border-strong)", transition: "background 0.2s ease" }} className="hover-highlight">
                   <td style={{ padding: "20px 24px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <span
-                        className="material-symbols-outlined"
-                        style={{
-                          color:
-                            file.icon === "picture_as_pdf"
-                              ? "#ba1a1a"
-                              : file.icon === "description"
-                              ? "#5d3fd3"
-                              : "#75777e",
-                        }}
-                      >
-                        {file.icon}
-                      </span>
-                      <span style={{ fontWeight: "500", color: "#0A192F" }}>{file.name}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                      {file.icon}
+                      <span style={{ fontSize: "14px", color: "var(--text-primary)" }}>{file.name}</span>
                     </div>
                   </td>
                   <td style={{ padding: "20px 24px" }}>
-                    <div
-                      style={{
-                        padding: "2px 8px",
-                        backgroundColor: "#e6deff",
-                        color: "#4723be",
-                        border: "1px solid rgba(93, 63, 211, 0.1)",
-                        borderRadius: "4px",
-                        fontSize: "11px",
-                        fontFamily: "JetBrains Mono",
-                        display: "inline-block",
-                        textTransform: "uppercase",
-                      }}
-                    >
+                    <span style={{ fontSize: "11px", letterSpacing: "1px", textTransform: "uppercase", color: "var(--text-secondary)", border: "1px solid var(--border-strong)", padding: "4px 8px" }}>
                       {file.category}
-                    </div>
+                    </span>
                   </td>
                   <td style={{ padding: "20px 24px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       {file.status === "Processing..." ? (
                         <>
-                          <span
-                            className="w-2 h-2 rounded-full success-pulse"
-                            style={{
-                              width: "8px",
-                              height: "8px",
-                              borderRadius: "50%",
-                              backgroundColor: "#5d3fd3",
-                            }}
-                          />
-                          <span style={{ fontSize: "14px", fontWeight: "500", color: "#5d3fd3" }}>
-                            {file.status}
-                          </span>
+                          <div className="skeleton" style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--accent-primary)" }} />
+                          <span style={{ fontSize: "12px", color: "var(--accent-primary)" }}>PROCESSING</span>
                         </>
                       ) : file.status === "Success" ? (
                         <>
-                          <span
-                            className="material-symbols-outlined"
-                            style={{ color: "#22c55e", fontSize: "18px" }}
-                          >
-                            check_circle
-                          </span>
-                          <span style={{ fontSize: "14px", fontWeight: "500", color: "#22c55e" }}>
-                            Success
-                          </span>
+                          <IconCheck size={16} color="#22c55e" />
+                          <span style={{ fontSize: "12px", color: "#22c55e" }}>SUCCESS</span>
                         </>
                       ) : (
                         <>
-                          <span
-                            className="material-symbols-outlined"
-                            style={{ color: "#ba1a1a", fontSize: "18px" }}
-                          >
-                            error
-                          </span>
-                          <span style={{ fontSize: "14px", fontWeight: "500", color: "#ba1a1a" }}>
-                            Corrupted File
-                          </span>
+                          <IconAlertCircle size={16} color="#ef4444" />
+                          <span style={{ fontSize: "12px", color: "#ef4444" }}>CORRUPTED</span>
                         </>
                       )}
                     </div>
                   </td>
-                  <td style={{ padding: "20px 24px", color: "#44474d", fontSize: "14px" }}>
+                  <td style={{ padding: "20px 24px", fontSize: "12px", color: "var(--text-secondary)", fontFamily: "Outfit, sans-serif" }}>
                     {file.uploadedTime}
                   </td>
                   <td style={{ padding: "20px 24px", textAlign: "right" }}>
-                    <button style={{ background: "none", border: "none", cursor: "pointer", color: "#75777e" }}>
-                      <span className="material-symbols-outlined">more_vert</span>
+                    <button style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer" }}>
+                      <IconDotsVertical size={16} />
                     </button>
                   </td>
                 </tr>
