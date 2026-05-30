@@ -1,6 +1,7 @@
 import { useState, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { IconArrowLeft, IconCloudUpload, IconFileTypePdf, IconFileTypeDocx, IconFileTypeTxt, IconCheck, IconLock, IconUsers, IconWorld, IconArrowRight, IconDotsVertical, IconAlertCircle } from "@tabler/icons-react";
+import { api, fileToBase64, type ApiError } from "../api/client";
 
 interface UploadedFile {
   id: string;
@@ -74,31 +75,62 @@ export default function UploadTemplate() {
     fileInputRef.current?.click();
   };
 
-  const handleProcessTemplate = () => {
-    if (!selectedFile) return;
+  const [error, setError] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
+
+  const handleProcessTemplate = async () => {
+    if (!selectedFile || processing) return;
+    if (!selectedFile.name.toLowerCase().endsWith(".docx")) {
+      setError("Only .docx templates are supported for AI schema extraction.");
+      return;
+    }
+
+    setError(null);
+    setProcessing(true);
 
     const newFileId = Math.random().toString(36).substring(7);
+    const fileName = selectedFile.name;
     const newFileRecord: UploadedFile = {
       id: newFileId,
-      name: selectedFile.name,
+      name: fileName,
       category: activeCategory,
       status: "Processing...",
       uploadedTime: "Just now",
-      icon: selectedFile.name.endsWith(".pdf")
-        ? <IconFileTypePdf size={20} color="var(--accent-primary)" />
-        : selectedFile.name.endsWith(".docx")
-        ? <IconFileTypeDocx size={20} color="var(--accent-primary)" />
-        : <IconFileTypeTxt size={20} color="var(--text-secondary)" />,
+      icon: <IconFileTypeDocx size={20} color="var(--accent-primary)" />,
     };
+    setRecentUploads((prev) => [newFileRecord, ...prev]);
 
-    setRecentUploads([newFileRecord, ...recentUploads]);
-    setSelectedFile(null); 
-
-    setTimeout(() => {
+    try {
+      const base64 = await fileToBase64(selectedFile);
+      const res = await api.uploadTemplate({
+        filename: fileName,
+        category: activeCategory,
+        access: activePrivacy,
+        base64,
+      });
       setRecentUploads((prev) =>
         prev.map((f) => (f.id === newFileId ? { ...f, status: "Success" } : f))
       );
-    }, 3500);
+      setSelectedFile(null);
+      // Hand off to the editor to review/edit AI-drafted descriptions.
+      navigate(`/templates/editor?templateId=${res.templateId}`, {
+        state: {
+          templateId: res.templateId,
+          variables: res.variables,
+          name: fileName.replace(/\.docx$/i, ""),
+        },
+      });
+    } catch (err) {
+      const msg = (err as ApiError).message ?? "Upload failed";
+      setError(msg);
+      setRecentUploads((prev) =>
+        prev.map((f) =>
+          f.id === newFileId ? { ...f, status: "Corrupted File" } : f
+        )
+      );
+    } finally {
+      setProcessing(false);
+    }
   };
 
   return (
@@ -131,7 +163,7 @@ export default function UploadTemplate() {
           </h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "16px", maxWidth: "600px", lineHeight: 1.6 }}>
             Initialize structural frameworks by uploading source documents. 
-            Supported formats: PDF, DOCX, TXT.
+            Supported format for schema extraction: DOCX.
           </p>
         </div>
       </div>
@@ -165,7 +197,7 @@ export default function UploadTemplate() {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".pdf,.docx,.txt"
+            accept=".docx"
             onChange={handleFileChange}
             style={{ display: "none" }}
           />
@@ -327,9 +359,14 @@ export default function UploadTemplate() {
             </div>
           </div>
 
-          <button onClick={handleProcessTemplate} className="btn-primary" style={{ marginTop: "auto", justifyContent: "center", padding: "16px" }}>
-            INITIALIZE SCHEMA
+          <button onClick={handleProcessTemplate} disabled={processing} className="btn-primary" style={{ marginTop: "auto", justifyContent: "center", padding: "16px", opacity: processing ? 0.6 : 1 }}>
+            {processing ? "EXTRACTING SCHEMA..." : "INITIALIZE SCHEMA"}
           </button>
+          {error && (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#ef4444", fontSize: "13px", marginTop: "4px" }}>
+              <IconAlertCircle size={16} /> {error}
+            </div>
+          )}
         </div>
       </div>
 

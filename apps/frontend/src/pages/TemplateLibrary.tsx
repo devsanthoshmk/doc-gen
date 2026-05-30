@@ -1,92 +1,187 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { IconSearch, IconUpload, IconPlus, IconGavel, IconUserPlus, IconReceipt2, IconAdjustmentsAlt, IconEye, IconHistory, IconCopy, IconArchive, IconZoomCancel } from "@tabler/icons-react";
+import {
+  IconSearch,
+  IconUpload,
+  IconPlus,
+  IconGavel,
+  IconUserPlus,
+  IconReceipt2,
+  IconAdjustmentsAlt,
+  IconEye,
+  IconHistory,
+  IconCopy,
+  IconZoomCancel,
+} from "@tabler/icons-react";
+import { api, type TemplateRow } from "../api/client";
+import { useGenerate } from "../context/useGenerate";
 
-interface Template {
-  id: number;
-  title: string;
-  category: string;
-  status: "Published" | "Drafting" | "Archived";
+type TemplateCard = TemplateRow & {
   description: string;
-  updatedAt: string;
-  uses: string;
   icon: ReactNode;
+  statusLabel: "Published" | "Drafting";
+  updatedLabel: string;
+  usesLabel: string;
+};
+
+/** Render-friendly relative timestamp for template metadata. */
+function formatRelativeTime(timestamp: number): string {
+  const diff = Date.now() - timestamp;
+  const minutes = Math.max(1, Math.floor(diff / 60000));
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(timestamp).toLocaleDateString();
 }
 
-const INITIAL_TEMPLATES: Template[] = [
-  {
-    id: 1,
-    title: "Master Service Agreement",
-    category: "Legal",
-    status: "Published",
-    description: "Standard contract for long-term consulting engagements and vendor relations.",
-    updatedAt: "2d ago",
-    uses: "1.2k uses",
-    icon: <IconGavel size={32} stroke={1.5} />,
-  },
-  {
-    id: 2,
-    title: "Onboarding Roadmap",
-    category: "HR",
-    status: "Published",
-    description: "A structured 30-60-90 day plan for new hires across all departments.",
-    updatedAt: "5d ago",
-    uses: "842 uses",
-    icon: <IconUserPlus size={32} stroke={1.5} />,
-  },
-  {
-    id: 3,
-    title: "Quarterly Budget Report",
-    category: "Finance",
-    status: "Drafting",
-    description: "Financial performance summary and projections for stakeholder review.",
-    updatedAt: "1h ago",
-    uses: "0 uses",
-    icon: <IconReceipt2 size={32} stroke={1.5} />,
-  },
-  {
-    id: 4,
-    title: "Vendor Quality Audit",
-    category: "Operations",
-    status: "Published",
-    description: "Inspection checklist for third-party logistics and manufacturing partners.",
-    updatedAt: "12d ago",
-    uses: "312 uses",
-    icon: <IconAdjustmentsAlt size={32} stroke={1.5} />,
-  },
-];
+function iconForCategory(category: string): ReactNode {
+  switch (category.toLowerCase()) {
+    case "legal":
+      return <IconGavel size={32} stroke={1.5} />;
+    case "hr":
+      return <IconUserPlus size={32} stroke={1.5} />;
+    case "finance":
+      return <IconReceipt2 size={32} stroke={1.5} />;
+    default:
+      return <IconAdjustmentsAlt size={32} stroke={1.5} />;
+  }
+}
 
 export default function TemplateLibrary() {
   const navigate = useNavigate();
+  const { setSelectedTemplate, setTemplateId } = useGenerate();
   const [search, setSearch] = useState("");
   const [selectedDomain, setSelectedDomain] = useState("All");
   const [selectedStatus, setSelectedStatus] = useState("All");
   const [selectedSort, setSelectedSort] = useState("Most Recent");
-  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<TemplateRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredTemplates = INITIAL_TEMPLATES.filter((tpl) => {
-    const matchesSearch =
-      tpl.title.toLowerCase().includes(search.toLowerCase()) ||
-      tpl.description.toLowerCase().includes(search.toLowerCase());
-    const matchesDomain = selectedDomain === "All" || tpl.category === selectedDomain;
-    const matchesStatus = selectedStatus === "All" || tpl.status === selectedStatus;
-    return matchesSearch && matchesDomain && matchesStatus;
-  });
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadTemplates() {
+      try {
+        const rows = await api.listTemplates();
+        if (!cancelled) {
+          setTemplates(rows);
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Failed to load templates"
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadTemplates();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const templateCards = useMemo<TemplateCard[]>(
+    () =>
+      templates.map((template) => ({
+        ...template,
+        description:
+          template.variables.length > 0
+            ? template.variables
+                .slice(0, 2)
+                .map((variable) => variable.description)
+                .join(" ")
+            : "No variables extracted yet.",
+        icon: iconForCategory(template.category),
+        statusLabel: template.status === "published" ? "Published" : "Drafting",
+        updatedLabel: formatRelativeTime(template.updatedAt ?? template.createdAt),
+        usesLabel: `${template.variables.length} variable${
+          template.variables.length === 1 ? "" : "s"
+        }`,
+      })),
+    [templates]
+  );
+
+  const filteredTemplates = useMemo(() => {
+    const filtered = templateCards.filter((template) => {
+      const matchesSearch =
+        template.name.toLowerCase().includes(search.toLowerCase()) ||
+        template.description.toLowerCase().includes(search.toLowerCase());
+      const matchesDomain =
+        selectedDomain === "All" || template.category === selectedDomain;
+      const matchesStatus =
+        selectedStatus === "All" || template.status === selectedStatus;
+      return matchesSearch && matchesDomain && matchesStatus;
+    });
+
+    return filtered.toSorted((a, b) => {
+      if (selectedSort === "A - Z") return a.name.localeCompare(b.name);
+      return (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt);
+    });
+  }, [search, selectedDomain, selectedStatus, selectedSort, templateCards]);
+
+  function handleInitializeTemplate(template: TemplateRow): void {
+    setTemplateId(template._id);
+    setSelectedTemplate(template.name);
+    navigate("/generate/enter-content");
+  }
 
   return (
-    <div className="animate-fade-up" style={{ maxWidth: "1400px", margin: "0 auto", padding: "60px 40px" }}>
-      {/* Header Section */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "60px", flexWrap: "wrap", gap: "24px" }}>
+    <div
+      className="animate-fade-up"
+      style={{ maxWidth: "1400px", margin: "0 auto", padding: "60px 40px" }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          marginBottom: "60px",
+          flexWrap: "wrap",
+          gap: "24px",
+        }}
+      >
         <div>
-          <div style={{ color: "var(--accent-primary)", fontSize: "12px", fontWeight: 700, letterSpacing: "2px", marginBottom: "16px", textTransform: "uppercase" }}>
+          <div
+            style={{
+              color: "var(--accent-primary)",
+              fontSize: "12px",
+              fontWeight: 700,
+              letterSpacing: "2px",
+              marginBottom: "16px",
+              textTransform: "uppercase",
+            }}
+          >
             Repository
           </div>
-          <h1 style={{ fontSize: "clamp(2.5rem, 4vw, 4rem)", fontFamily: "Syne, sans-serif", marginBottom: "16px" }}>
+          <h1
+            style={{
+              fontSize: "clamp(2.5rem, 4vw, 4rem)",
+              fontFamily: "Syne, sans-serif",
+              marginBottom: "16px",
+            }}
+          >
             Template Library
           </h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "16px", maxWidth: "600px", lineHeight: 1.6 }}>
-            Access and manage structural frameworks for document synthesis. 
-            Standardize your workflows with pre-configured models.
+          <p
+            style={{
+              color: "var(--text-secondary)",
+              fontSize: "16px",
+              maxWidth: "600px",
+              lineHeight: 1.6,
+            }}
+          >
+            Access and manage structural frameworks for document synthesis.
+            Standardize your workflows with live template data.
           </p>
         </div>
         <div style={{ display: "flex", gap: "16px" }}>
@@ -97,27 +192,37 @@ export default function TemplateLibrary() {
             <IconUpload size={18} /> Upload Schema
           </button>
           <button
-            onClick={() => navigate("/templates/editor")}
+            onClick={() => navigate("/templates/upload")}
             className="btn-primary"
           >
-            <IconPlus size={18} /> Create New
+            <IconPlus size={18} /> Create From DOCX
           </button>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div style={{ 
-        display: "flex", 
-        flexWrap: "wrap", 
-        gap: "16px", 
-        marginBottom: "40px", 
-        padding: "20px",
-        background: "var(--bg-surface)",
-        border: "1px solid var(--border-subtle)",
-        borderRadius: "8px"
-      }}>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "16px",
+          marginBottom: "40px",
+          padding: "20px",
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border-subtle)",
+          borderRadius: "8px",
+        }}
+      >
         <div style={{ position: "relative", flex: "1 1 300px" }}>
-          <IconSearch size={20} style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary)" }} />
+          <IconSearch
+            size={20}
+            style={{
+              position: "absolute",
+              left: "16px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "var(--text-secondary)",
+            }}
+          />
           <input
             type="text"
             placeholder="Search repository..."
@@ -134,11 +239,13 @@ export default function TemplateLibrary() {
               outline: "none",
               transition: "border-color 0.3s ease",
             }}
-            onFocus={(e) => e.target.style.borderColor = "var(--accent-primary)"}
-            onBlur={(e) => e.target.style.borderColor = "var(--border-subtle)"}
+            onFocus={(e) => (e.target.style.borderColor = "var(--accent-primary)")}
+            onBlur={(e) =>
+              (e.target.style.borderColor = "var(--border-subtle)")
+            }
           />
         </div>
-        
+
         <select
           value={selectedDomain}
           onChange={(e) => setSelectedDomain(e.target.value)}
@@ -159,9 +266,8 @@ export default function TemplateLibrary() {
           style={{ width: "auto", minWidth: "160px" }}
         >
           <option value="All">Status: All</option>
-          <option value="Published">Published</option>
-          <option value="Drafting">Drafting</option>
-          <option value="Archived">Archived</option>
+          <option value="published">Published</option>
+          <option value="draft">Drafting</option>
         </select>
 
         <select
@@ -170,20 +276,35 @@ export default function TemplateLibrary() {
           className="minimal-input"
           style={{ width: "auto", minWidth: "160px" }}
         >
-          <option>Sort: Most Recent</option>
+          <option>Most Recent</option>
           <option>A - Z</option>
-          <option>Popularity</option>
         </select>
       </div>
 
-      {/* Grid & Cards */}
-      {filteredTemplates.length > 0 ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "24px" }}>
-          {filteredTemplates.map((tpl) => (
+      {loading ? (
+        <div className="glass-panel" style={{ padding: "80px 40px", textAlign: "center" }}>
+          Loading templates...
+        </div>
+      ) : error ? (
+        <div
+          className="glass-panel"
+          style={{ padding: "80px 40px", textAlign: "center", color: "#ef4444" }}
+        >
+          {error}
+        </div>
+      ) : filteredTemplates.length > 0 ? (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+            gap: "24px",
+          }}
+        >
+          {filteredTemplates.map((template) => (
             <div
-              key={tpl.id}
+              key={template._id}
               className="glass-panel"
-              onMouseEnter={() => setHoveredCard(tpl.id)}
+              onMouseEnter={() => setHoveredCard(template._id)}
               onMouseLeave={() => setHoveredCard(null)}
               style={{
                 position: "relative",
@@ -193,126 +314,188 @@ export default function TemplateLibrary() {
                 padding: "32px",
                 cursor: "pointer",
                 transition: "all 0.3s ease",
-                transform: hoveredCard === tpl.id ? "translateY(-4px)" : "none",
-                borderColor: hoveredCard === tpl.id ? "var(--accent-primary)" : "var(--border-subtle)",
-                boxShadow: hoveredCard === tpl.id ? "0 8px 32px rgba(204, 255, 0, 0.05)" : "none",
-                overflow: "hidden"
+                transform:
+                  hoveredCard === template._id ? "translateY(-4px)" : "none",
+                borderColor:
+                  hoveredCard === template._id
+                    ? "var(--accent-primary)"
+                    : "var(--border-subtle)",
+                boxShadow:
+                  hoveredCard === template._id
+                    ? "0 8px 32px rgba(204, 255, 0, 0.05)"
+                    : "none",
+                overflow: "hidden",
               }}
             >
-              {/* Card Icon Header */}
-              <div style={{ 
-                width: "64px", 
-                height: "64px", 
-                background: "var(--bg-elevated)", 
-                border: "1px solid var(--border-strong)",
-                display: "flex", 
-                alignItems: "center", 
-                justifyContent: "center",
-                color: "var(--accent-primary)",
-                marginBottom: "24px"
-              }}>
-                {tpl.icon}
+              <div
+                style={{
+                  width: "64px",
+                  height: "64px",
+                  background: "var(--bg-elevated)",
+                  border: "1px solid var(--border-strong)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--accent-primary)",
+                  marginBottom: "24px",
+                }}
+              >
+                {template.icon}
               </div>
 
-              {/* Title & Info */}
               <div style={{ flexGrow: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-                  <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-secondary)" }}>
-                    {tpl.category}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.1em",
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    {template.category}
                   </span>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ 
-                      width: "6px", 
-                      height: "6px", 
-                      borderRadius: "50%", 
-                      backgroundColor: tpl.status === "Published" ? "var(--accent-primary)" : "var(--text-secondary)",
-                      boxShadow: tpl.status === "Published" ? "0 0 8px var(--accent-glow)" : "none"
-                    }} />
-                    <span style={{ fontSize: "11px", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                      {tpl.status}
+                    <span
+                      style={{
+                        width: "6px",
+                        height: "6px",
+                        borderRadius: "50%",
+                        backgroundColor:
+                          template.status === "published"
+                            ? "var(--accent-primary)"
+                            : "var(--text-secondary)",
+                        boxShadow:
+                          template.status === "published"
+                            ? "0 0 8px var(--accent-glow)"
+                            : "none",
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        color: "var(--text-secondary)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      {template.statusLabel}
                     </span>
                   </div>
                 </div>
-                
-                <h3 style={{ fontSize: "20px", fontFamily: "Syne, sans-serif", color: "var(--text-primary)", marginBottom: "12px" }}>
-                  {tpl.title}
+
+                <h3
+                  style={{
+                    fontSize: "20px",
+                    fontFamily: "Syne, sans-serif",
+                    color: "var(--text-primary)",
+                    marginBottom: "12px",
+                  }}
+                >
+                  {template.name}
                 </h3>
-                
-                <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: "24px" }}>
-                  {tpl.description}
+
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: "var(--text-secondary)",
+                    lineHeight: 1.6,
+                    marginBottom: "24px",
+                  }}
+                >
+                  {template.description}
                 </p>
               </div>
 
-              {/* Footer */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "20px", borderTop: "1px solid var(--border-strong)", color: "var(--text-secondary)" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  paddingTop: "20px",
+                  borderTop: "1px solid var(--border-strong)",
+                  color: "var(--text-secondary)",
+                }}
+              >
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <IconHistory size={16} stroke={1.5} />
-                  <span style={{ fontSize: "12px", fontFamily: "Outfit, sans-serif" }}>Updated {tpl.updatedAt}</span>
+                  <span style={{ fontSize: "12px", fontFamily: "Outfit, sans-serif" }}>
+                    Updated {template.updatedLabel}
+                  </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <IconEye size={16} stroke={1.5} />
-                  <span style={{ fontSize: "12px", fontFamily: "Outfit, sans-serif" }}>{tpl.uses}</span>
+                  <span style={{ fontSize: "12px", fontFamily: "Outfit, sans-serif" }}>
+                    {template.usesLabel}
+                  </span>
                 </div>
               </div>
 
-              {/* Hover Overlay Actions */}
-              <div style={{
-                position: "absolute",
-                inset: 0,
-                backgroundColor: "rgba(5, 5, 5, 0.95)",
-                backdropFilter: "blur(4px)",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                gap: "12px",
-                padding: "32px",
-                opacity: hoveredCard === tpl.id ? 1 : 0,
-                visibility: hoveredCard === tpl.id ? "visible" : "hidden",
-                transition: "all 0.2s ease",
-                zIndex: 10,
-              }}>
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  backgroundColor: "rgba(5, 5, 5, 0.95)",
+                  backdropFilter: "blur(4px)",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  gap: "12px",
+                  padding: "32px",
+                  opacity: hoveredCard === template._id ? 1 : 0,
+                  visibility: hoveredCard === template._id ? "visible" : "hidden",
+                  transition: "all 0.2s ease",
+                  zIndex: 10,
+                }}
+              >
                 <button
-                  onClick={() => navigate("/generate/select-template")}
+                  onClick={() => handleInitializeTemplate(template)}
                   className="btn-primary"
                   style={{ width: "100%", justifyContent: "center" }}
                 >
                   <IconEye size={18} /> INITIALIZE
                 </button>
                 <button
-                  onClick={() => navigate("/templates/editor")}
+                  onClick={() =>
+                    navigate(`/templates/editor?templateId=${template._id}`)
+                  }
                   className="btn-outline"
                   style={{ width: "100%", justifyContent: "center" }}
                 >
-                  <IconAdjustmentsAlt size={18} /> EDIT SCHEMA
+                  <IconCopy size={18} /> EDIT SCHEMA
                 </button>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <button className="btn-outline" style={{ padding: "8px", justifyContent: "center", fontSize: "12px" }}>
-                    <IconCopy size={16} /> DUP
-                  </button>
-                  <button className="btn-outline" style={{ padding: "8px", justifyContent: "center", fontSize: "12px", color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.3)" }}>
-                    <IconArchive size={16} /> ARCHIVE
-                  </button>
-                </div>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        /* Empty State */
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "100px 20px", textAlign: "center", border: "1px dashed var(--border-strong)" }}>
-          <IconZoomCancel size={64} stroke={1} color="var(--text-secondary)" style={{ marginBottom: "24px" }} />
-          <h3 style={{ fontSize: "24px", fontFamily: "Syne, sans-serif", color: "var(--text-primary)", marginBottom: "16px" }}>
-            Null Result
-          </h3>
-          <p style={{ color: "var(--text-secondary)", fontSize: "16px", maxWidth: "400px", marginBottom: "32px", lineHeight: 1.6 }}>
-            No structural frameworks match the current parameters. Adjust filters or initialize a new schema.
-          </p>
-          <button
-            onClick={() => navigate("/templates/editor")}
-            className="btn-primary"
+        <div className="glass-panel" style={{ padding: "80px 40px", textAlign: "center" }}>
+          <IconZoomCancel
+            size={48}
+            stroke={1.5}
+            color="var(--text-secondary)"
+            style={{ marginBottom: "24px", opacity: 0.5 }}
+          />
+          <h3
+            style={{
+              fontSize: "24px",
+              fontFamily: "Syne, sans-serif",
+              marginBottom: "12px",
+            }}
           >
-            <IconPlus size={18} /> Create New Schema
-          </button>
+            No matching templates found
+          </h3>
+          <p style={{ color: "var(--text-secondary)", fontSize: "14px" }}>
+            Try adjusting your filters or upload a new template framework.
+          </p>
         </div>
       )}
     </div>

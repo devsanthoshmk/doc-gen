@@ -1,0 +1,45 @@
+{
+  "name": "@repo/convex",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./convex/_generated/api.js",
+  "types": "./convex/_generated/api.d.ts",
+  "exports": {
+    ".": {
+      "types": "./convex/_generated/api.d.ts",
+      "import": "./convex/_generated/api.js",
+      "default": "./convex/_generated/api.js"
+    },
+    "./server": {
+      "types": "./convex/_generated/server.d.ts",
+      "import": "./convex/_generated/server.js",
+      "default": "./convex/_generated/server.js"
+    },
+    "./dataModel": {
+      "types": "./convex/_generated/dataModel.d.ts",
+      "import": "./convex/_generated/dataModel.d.ts",
+      "default": "./convex/_generated/dataModel.d.ts"
+    }
+  },
+  "scripts": {
+    "dev": "convex dev",
+    "predev": "convex dev --until-success && convex dashboard",
+    "logs": "convex logs",
+    "lint": "tsc -p convex && eslint . --report-unused-disable-directives --max-warnings 0"
+  },
+  "dependencies": {
+    "convex": "^1.36.1"
+  },
+  "devDependencies": {
+    "@convex-dev/eslint-plugin": "^1.2.2",
+    "@eslint/eslintrc": "^3.3.5",
+    "@eslint/js": "^9.39.4",
+    "@types/node": "^24.12.2",
+    "@typescript-eslint/eslint-plugin": "^8.58.2",
+    "@typescript-eslint/parser": "^8.58.2",
+    "eslint": "^9.39.4",
+    "globals": "^17.5.0",
+    "typescript": "^6.0.3"
+  }
+}

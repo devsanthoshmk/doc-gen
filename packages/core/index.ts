@@ -1,83 +1,158 @@
 import * as fs from "fs";
 import * as path from "path";
 import { replaceTemplateVariables } from "./src/replacer";
+import { extractTemplateVariables } from "./src/extract";
+import { flattenObject, type JsonObject } from "./src/flatten";
+import {
+  checkPlaceholders,
+  validateAgainstSchema,
+  type TemplateSchema,
+} from "./src/validate";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Debug CLI ──────────────────────────────────────────────────────────────
+// Exercises each core module in isolation — no worker / Convex / AI needed.
+//
+//   pnpm --filter @repo/core dev                 # smoke test against samples
+//   pnpm --filter @repo/core dev extract  <docx>
+//   pnpm --filter @repo/core dev validate <docx> <data.json> [schema.json]
+//   pnpm --filter @repo/core dev render   <docx> <data.json> [out.docx]
 
-type JsonValue = string | number | boolean | null | JsonObject | JsonArray;
-interface JsonObject { [key: string]: JsonValue }
-type JsonArray = JsonValue[];
+const SAMPLE_DOCX = "template.docx";
+const SAMPLE_DATA = "sample-data.json";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function flattenObject(obj: JsonObject, prefix = "", result: JsonObject = {}): JsonObject {
-  for (const [key, value] of Object.entries(obj)) {
-    const flatKey = prefix ? `${prefix}.${key}` : key;
-    if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-      result[flatKey] = value;
-      flattenObject(value as JsonObject, flatKey, result);
-    } else {
-      result[flatKey] = value;
-    }
-    if (!prefix) result[key] = value;
-  }
-  return result;
+function readDocx(p: string): Buffer {
+  return fs.readFileSync(path.resolve(p));
 }
 
-// ─── CLI entry point ──────────────────────────────────────────────────────────
+function readJson<T>(p: string): T {
+  return JSON.parse(fs.readFileSync(path.resolve(p), "utf-8")) as T;
+}
 
 function printUsage(): void {
   console.log(`
-Usage:
-  ts-node src/index.ts <template.docx> <data.json> [output.docx]
+@repo/core debug CLI
 
-Arguments:
-  template.docx   Path to the Word document with {{placeholders}}
-  data.json       Path to the JSON file with replacement values
-  output.docx     (optional) Where to write the filled document
-                  Defaults to <template>-output.docx in the same folder
+  extract  <docx>                          List {{placeholders}} found in a docx
+  validate <docx> <data.json> [schema.json] Check placeholders (+ schema if given)
+  render   <docx> <data.json> [out.docx]    Fill template, write output docx
+  test                                     Run all checks against bundled samples
+
+Defaults: docx=${SAMPLE_DOCX}, data=${SAMPLE_DATA}
 `);
 }
 
-function main(): void {
-  let templatePath = "template.docx";
-  let dataPath = "sample-data.json";
-  let outputPath = "output/filled.docx";
-  
-  const args = process.argv.slice(2);
-    
-  if (args.includes("--help") || args.includes("-h")) {
-    printUsage();
-    process.exit(args.length < 2 ? 1 : 0);
-  } else if (args.length >= 2) {
-    templatePath = args[0] || "template.docx";
-    dataPath = args[1] || "sample-data.json";
-    outputPath = args[2];
+function cmdExtract(docxPath: string): string[] {
+  const vars = extractTemplateVariables(readDocx(docxPath));
+  console.log(`Variables in ${docxPath} (${vars.length}):`);
+  for (const v of vars) console.log(`  • ${v}`);
+  return vars;
+}
+
+function cmdValidate(
+  docxPath: string,
+  dataPath: string,
+  schemaPath?: string
+): boolean {
+  const vars = extractTemplateVariables(readDocx(docxPath));
+  const raw = readJson<JsonObject>(dataPath);
+  const data = flattenObject(raw);
+
+  const placeholder = checkPlaceholders(vars, data);
+  console.log(
+    placeholder.ok
+      ? "✅ Placeholders: all present"
+      : `❌ Placeholders missing: ${placeholder.missing.join(", ")}`
+  );
+
+  let schemaOk = true;
+  if (schemaPath) {
+    const schema = readJson<TemplateSchema>(schemaPath);
+    const res = validateAgainstSchema(raw, schema);
+    schemaOk = res.ok;
+    console.log(
+      res.ok
+        ? "✅ Schema: valid"
+        : `❌ Schema errors:\n  ${res.errors.join("\n  ")}`
+    );
   }
 
+  return placeholder.ok && schemaOk;
+}
+
+function cmdRender(
+  docxPath: string,
+  dataPath: string,
+  outPath?: string
+): string {
+  const blob = readDocx(docxPath);
+  const data = flattenObject(readJson<JsonObject>(dataPath));
+  const outBuffer = replaceTemplateVariables(blob, data);
+
+  const absTemplate = path.resolve(docxPath);
+  const resolved =
+    outPath ??
+    path.join(
+      path.dirname(absTemplate),
+      path.basename(absTemplate, ".docx") + "-output.docx"
+    );
+  fs.writeFileSync(resolved, outBuffer);
+  console.log(`✅ Rendered -> ${path.resolve(resolved)}`);
+  return resolved;
+}
+
+function cmdTest(): boolean {
+  console.log("── core smoke test ──");
+  let pass = true;
+  try {
+    const vars = cmdExtract(SAMPLE_DOCX);
+    pass = pass && vars.length > 0;
+  } catch (e) {
+    pass = false;
+    console.error(`extract failed: ${(e as Error).message}`);
+  }
+  try {
+    pass = cmdValidate(SAMPLE_DOCX, SAMPLE_DATA) && pass;
+  } catch (e) {
+    pass = false;
+    console.error(`validate failed: ${(e as Error).message}`);
+  }
+  try {
+    cmdRender(SAMPLE_DOCX, SAMPLE_DATA, "output/filled.docx");
+  } catch (e) {
+    pass = false;
+    console.error(`render failed: ${(e as Error).message}`);
+  }
+  console.log(pass ? "\n✅ ALL PASS" : "\n❌ FAILURES — see above");
+  return pass;
+}
+
+function main(): void {
+  const [cmd, ...rest] = process.argv.slice(2);
 
   try {
-    // Step 1 — read the docx file into a blob
-    const blob = fs.readFileSync(path.resolve(templatePath));
-
-    // Step 2 — read, parse, and flatten the JSON data
-    const rawData = JSON.parse(fs.readFileSync(path.resolve(dataPath), "utf-8")) as JsonObject;
-    const data    = flattenObject(rawData);
-
-    // Step 3 — replace template variables, get back the output buffer directly
-    const outBuffer = replaceTemplateVariables(blob, data);
-
-    // Step 4 — write the buffer to disk
-    const absTemplate = path.resolve(templatePath);
-    const resolvedOutput =
-      outputPath ??
-      path.join(
-        path.dirname(absTemplate),
-        path.basename(absTemplate, ".docx") + "-output.docx"
-      );
-    fs.writeFileSync(resolvedOutput, outBuffer);
-
-    console.log(`✅ Done! Output written to:\n   ${path.resolve(resolvedOutput)}`);
+    switch (cmd) {
+      case "extract":
+        cmdExtract(rest[0] ?? SAMPLE_DOCX);
+        break;
+      case "validate":
+        cmdValidate(rest[0] ?? SAMPLE_DOCX, rest[1] ?? SAMPLE_DATA, rest[2]);
+        break;
+      case "render":
+        cmdRender(rest[0] ?? SAMPLE_DOCX, rest[1] ?? SAMPLE_DATA, rest[2]);
+        break;
+      case undefined:
+      case "test":
+        if (!cmdTest()) process.exit(1);
+        break;
+      case "--help":
+      case "-h":
+        printUsage();
+        break;
+      default:
+        console.error(`Unknown command: ${cmd}`);
+        printUsage();
+        process.exit(1);
+    }
   } catch (err) {
     console.error(`❌ Error: ${(err as Error).message}`);
     process.exit(1);
